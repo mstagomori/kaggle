@@ -1,0 +1,717 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "3e90bbf4",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2024-07-22T13:56:06.159883Z",
+     "iopub.status.busy": "2024-07-22T13:56:06.159348Z",
+     "iopub.status.idle": "2024-07-22T13:56:07.772151Z",
+     "shell.execute_reply": "2024-07-22T13:56:07.770497Z"
+    },
+    "papermill": {
+     "duration": 1.620818,
+     "end_time": "2024-07-22T13:56:07.774758",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:06.153940",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/kaggle/input/online-sales-dataset-popular-marketplace-data/Online Sales Data.csv\n"
+     ]
+    }
+   ],
+   "source": [
+    "import numpy as np # linear algebra\n",
+    "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+    "import re # change strings\n",
+    "\n",
+    "import plotly.express as px\n",
+    "\n",
+    "\n",
+    "import os\n",
+    "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+    "    for filename in filenames:\n",
+    "        print(os.path.join(dirname, filename))\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1dc0176e",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003388,
+     "end_time": "2024-07-22T13:56:07.781719",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:07.778331",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Insights\n",
+    "1. Analyze sales trends over time to identify seasonal patterns or growth opportunities.\n",
+    "2. Explore the popularity of different product categories across regions.\n",
+    "3. Investigate the impact of payment methods on sales volume or revenue.\n",
+    "4. Identify top-selling products within each category to optimize inventory and marketing strategies.\n",
+    "5. Evaluate the performance of specific products or categories in different regions to tailor marketing campaigns accordingly."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "78a8793d",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003615,
+     "end_time": "2024-07-22T13:56:07.788737",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:07.785122",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## Dataset Analysis"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "314abda1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-22T13:56:07.797723Z",
+     "iopub.status.busy": "2024-07-22T13:56:07.797134Z",
+     "iopub.status.idle": "2024-07-22T13:56:07.846158Z",
+     "shell.execute_reply": "2024-07-22T13:56:07.844351Z"
+    },
+    "papermill": {
+     "duration": 0.056979,
+     "end_time": "2024-07-22T13:56:07.849098",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:07.792119",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Transaction ID</th>\n",
+       "      <th>Date</th>\n",
+       "      <th>Product Category</th>\n",
+       "      <th>Product Name</th>\n",
+       "      <th>Units Sold</th>\n",
+       "      <th>Unit Price</th>\n",
+       "      <th>Total Revenue</th>\n",
+       "      <th>Region</th>\n",
+       "      <th>Payment Method</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>10001</td>\n",
+       "      <td>2024-01-01</td>\n",
+       "      <td>Electronics</td>\n",
+       "      <td>iPhone 14 Pro</td>\n",
+       "      <td>2</td>\n",
+       "      <td>999.99</td>\n",
+       "      <td>1999.98</td>\n",
+       "      <td>North America</td>\n",
+       "      <td>Credit Card</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>10002</td>\n",
+       "      <td>2024-01-02</td>\n",
+       "      <td>Home Appliances</td>\n",
+       "      <td>Dyson V11 Vacuum</td>\n",
+       "      <td>1</td>\n",
+       "      <td>499.99</td>\n",
+       "      <td>499.99</td>\n",
+       "      <td>Europe</td>\n",
+       "      <td>PayPal</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>10003</td>\n",
+       "      <td>2024-01-03</td>\n",
+       "      <td>Clothing</td>\n",
+       "      <td>Levi's 501 Jeans</td>\n",
+       "      <td>3</td>\n",
+       "      <td>69.99</td>\n",
+       "      <td>209.97</td>\n",
+       "      <td>Asia</td>\n",
+       "      <td>Debit Card</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>10004</td>\n",
+       "      <td>2024-01-04</td>\n",
+       "      <td>Books</td>\n",
+       "      <td>The Da Vinci Code</td>\n",
+       "      <td>4</td>\n",
+       "      <td>15.99</td>\n",
+       "      <td>63.96</td>\n",
+       "      <td>North America</td>\n",
+       "      <td>Credit Card</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>10005</td>\n",
+       "      <td>2024-01-05</td>\n",
+       "      <td>Beauty Products</td>\n",
+       "      <td>Neutrogena Skincare Set</td>\n",
+       "      <td>1</td>\n",
+       "      <td>89.99</td>\n",
+       "      <td>89.99</td>\n",
+       "      <td>Europe</td>\n",
+       "      <td>PayPal</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   Transaction ID        Date Product Category             Product Name  \\\n",
+       "0           10001  2024-01-01      Electronics            iPhone 14 Pro   \n",
+       "1           10002  2024-01-02  Home Appliances         Dyson V11 Vacuum   \n",
+       "2           10003  2024-01-03         Clothing         Levi's 501 Jeans   \n",
+       "3           10004  2024-01-04            Books        The Da Vinci Code   \n",
+       "4           10005  2024-01-05  Beauty Products  Neutrogena Skincare Set   \n",
+       "\n",
+       "   Units Sold  Unit Price  Total Revenue         Region Payment Method  \n",
+       "0           2      999.99        1999.98  North America    Credit Card  \n",
+       "1           1      499.99         499.99         Europe         PayPal  \n",
+       "2           3       69.99         209.97           Asia     Debit Card  \n",
+       "3           4       15.99          63.96  North America    Credit Card  \n",
+       "4           1       89.99          89.99         Europe         PayPal  "
+      ]
+     },
+     "execution_count": 2,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df = pd.read_csv(\"/kaggle/input/online-sales-dataset-popular-marketplace-data/Online Sales Data.csv\")\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "ebb6b69e",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-22T13:56:07.858762Z",
+     "iopub.status.busy": "2024-07-22T13:56:07.858351Z",
+     "iopub.status.idle": "2024-07-22T13:56:07.889012Z",
+     "shell.execute_reply": "2024-07-22T13:56:07.887282Z"
+    },
+    "papermill": {
+     "duration": 0.039365,
+     "end_time": "2024-07-22T13:56:07.892097",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:07.852732",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 240 entries, 0 to 239\n",
+      "Data columns (total 9 columns):\n",
+      " #   Column            Non-Null Count  Dtype  \n",
+      "---  ------            --------------  -----  \n",
+      " 0   Transaction ID    240 non-null    int64  \n",
+      " 1   Date              240 non-null    object \n",
+      " 2   Product Category  240 non-null    object \n",
+      " 3   Product Name      240 non-null    object \n",
+      " 4   Units Sold        240 non-null    int64  \n",
+      " 5   Unit Price        240 non-null    float64\n",
+      " 6   Total Revenue     240 non-null    float64\n",
+      " 7   Region            240 non-null    object \n",
+      " 8   Payment Method    240 non-null    object \n",
+      "dtypes: float64(2), int64(2), object(5)\n",
+      "memory usage: 17.0+ KB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "3c1f23ea",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-22T13:56:07.902833Z",
+     "iopub.status.busy": "2024-07-22T13:56:07.901156Z",
+     "iopub.status.idle": "2024-07-22T13:56:07.922435Z",
+     "shell.execute_reply": "2024-07-22T13:56:07.920828Z"
+    },
+    "papermill": {
+     "duration": 0.028673,
+     "end_time": "2024-07-22T13:56:07.924963",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:07.896290",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>transaction_id</th>\n",
+       "      <th>date</th>\n",
+       "      <th>product_category</th>\n",
+       "      <th>product_name</th>\n",
+       "      <th>units_sold</th>\n",
+       "      <th>unit_price</th>\n",
+       "      <th>total_revenue</th>\n",
+       "      <th>region</th>\n",
+       "      <th>payment_method</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>10001</td>\n",
+       "      <td>2024-01-01</td>\n",
+       "      <td>Electronics</td>\n",
+       "      <td>iPhone 14 Pro</td>\n",
+       "      <td>2</td>\n",
+       "      <td>999.99</td>\n",
+       "      <td>1999.98</td>\n",
+       "      <td>North America</td>\n",
+       "      <td>Credit Card</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>10002</td>\n",
+       "      <td>2024-01-02</td>\n",
+       "      <td>Home Appliances</td>\n",
+       "      <td>Dyson V11 Vacuum</td>\n",
+       "      <td>1</td>\n",
+       "      <td>499.99</td>\n",
+       "      <td>499.99</td>\n",
+       "      <td>Europe</td>\n",
+       "      <td>PayPal</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>10003</td>\n",
+       "      <td>2024-01-03</td>\n",
+       "      <td>Clothing</td>\n",
+       "      <td>Levi's 501 Jeans</td>\n",
+       "      <td>3</td>\n",
+       "      <td>69.99</td>\n",
+       "      <td>209.97</td>\n",
+       "      <td>Asia</td>\n",
+       "      <td>Debit Card</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>10004</td>\n",
+       "      <td>2024-01-04</td>\n",
+       "      <td>Books</td>\n",
+       "      <td>The Da Vinci Code</td>\n",
+       "      <td>4</td>\n",
+       "      <td>15.99</td>\n",
+       "      <td>63.96</td>\n",
+       "      <td>North America</td>\n",
+       "      <td>Credit Card</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>10005</td>\n",
+       "      <td>2024-01-05</td>\n",
+       "      <td>Beauty Products</td>\n",
+       "      <td>Neutrogena Skincare Set</td>\n",
+       "      <td>1</td>\n",
+       "      <td>89.99</td>\n",
+       "      <td>89.99</td>\n",
+       "      <td>Europe</td>\n",
+       "      <td>PayPal</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   transaction_id        date product_category             product_name  \\\n",
+       "0           10001  2024-01-01      Electronics            iPhone 14 Pro   \n",
+       "1           10002  2024-01-02  Home Appliances         Dyson V11 Vacuum   \n",
+       "2           10003  2024-01-03         Clothing         Levi's 501 Jeans   \n",
+       "3           10004  2024-01-04            Books        The Da Vinci Code   \n",
+       "4           10005  2024-01-05  Beauty Products  Neutrogena Skincare Set   \n",
+       "\n",
+       "   units_sold  unit_price  total_revenue         region payment_method  \n",
+       "0           2      999.99        1999.98  North America    Credit Card  \n",
+       "1           1      499.99         499.99         Europe         PayPal  \n",
+       "2           3       69.99         209.97           Asia     Debit Card  \n",
+       "3           4       15.99          63.96  North America    Credit Card  \n",
+       "4           1       89.99          89.99         Europe         PayPal  "
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def transform_columns_to_snake_case(df):\n",
+    "    def snake_case(text):\n",
+    "        text = text.strip().lower()\n",
+    "        text = re.sub(r'[\\s\\-\\/]+', '_', text)\n",
+    "        return text\n",
+    "    \n",
+    "    df.columns = [snake_case(col) for col in df.columns]\n",
+    "    \n",
+    "    return df\n",
+    "\n",
+    "transform_columns_to_snake_case(df)\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "de0ab711",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-22T13:56:07.935799Z",
+     "iopub.status.busy": "2024-07-22T13:56:07.935211Z",
+     "iopub.status.idle": "2024-07-22T13:56:10.046753Z",
+     "shell.execute_reply": "2024-07-22T13:56:10.045229Z"
+    },
+    "papermill": {
+     "duration": 2.120822,
+     "end_time": "2024-07-22T13:56:10.049652",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:07.928830",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/opt/conda/lib/python3.10/site-packages/plotly/express/_core.py:2065: FutureWarning: When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.\n",
+      "  sf: grouped.get_group(s if len(s) > 1 else s[0])\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "        <script type=\"text/javascript\">\n",
+       "        window.PlotlyConfig = {MathJaxConfig: 'local'};\n",
+       "        if (window.MathJax && window.MathJax.Hub && window.MathJax.Hub.Config) {window.MathJax.Hub.Config({SVG: {font: \"STIX-Web\"}});}\n",
+       "        if (typeof require !== 'undefined') {\n",
+       "        require.undef(\"plotly\");\n",
+       "        requirejs.config({\n",
+       "            paths: {\n",
+       "                'plotly': ['https://cdn.plot.ly/plotly-2.27.0.min']\n",
+       "            }\n",
+       "        });\n",
+       "        require(['plotly'], function(Plotly) {\n",
+       "            window._Plotly = Plotly;\n",
+       "        });\n",
+       "        }\n",
+       "        </script>\n",
+       "        "
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div>                            <div id=\"2d7ec012-b9ad-49dd-abf7-204bdc42d774\" class=\"plotly-graph-div\" style=\"height:525px; width:1080px;\"></div>            <script type=\"text/javascript\">                require([\"plotly\"], function(Plotly) {                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById(\"2d7ec012-b9ad-49dd-abf7-204bdc42d774\")) {                    Plotly.newPlot(                        \"2d7ec012-b9ad-49dd-abf7-204bdc42d774\",                        [{\"alignmentgroup\":\"True\",\"hovertemplate\":\"color=blue\\u003cbr\\u003eMonth=%{x}\\u003cbr\\u003eUnits Sold=%{text}\\u003cextra\\u003e\\u003c\\u002fextra\\u003e\",\"legendgroup\":\"blue\",\"marker\":{\"color\":\"#636efa\",\"pattern\":{\"shape\":\"\"}},\"name\":\"blue\",\"offsetgroup\":\"blue\",\"orientation\":\"v\",\"showlegend\":true,\"text\":[68.0,77.0,65.0,60.0,61.0,53.0,52.0],\"textposition\":\"outside\",\"x\":[\"2024-01\",\"2024-02\",\"2024-04\",\"2024-05\",\"2024-06\",\"2024-07\",\"2024-08\"],\"xaxis\":\"x\",\"y\":[68,77,65,60,61,53,52],\"yaxis\":\"y\",\"type\":\"bar\"},{\"alignmentgroup\":\"True\",\"hovertemplate\":\"color=red\\u003cbr\\u003eMonth=%{x}\\u003cbr\\u003eUnits Sold=%{text}\\u003cextra\\u003e\\u003c\\u002fextra\\u003e\",\"legendgroup\":\"red\",\"marker\":{\"color\":\"#EF553B\",\"pattern\":{\"shape\":\"\"}},\"name\":\"red\",\"offsetgroup\":\"red\",\"orientation\":\"v\",\"showlegend\":true,\"text\":[82.0],\"textposition\":\"outside\",\"x\":[\"2024-03\"],\"xaxis\":\"x\",\"y\":[82],\"yaxis\":\"y\",\"type\":\"bar\"}],                        {\"template\":{\"data\":{\"histogram2dcontour\":[{\"type\":\"histogram2dcontour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"choropleth\":[{\"type\":\"choropleth\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"histogram2d\":[{\"type\":\"histogram2d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"heatmap\":[{\"type\":\"heatmap\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"heatmapgl\":[{\"type\":\"heatmapgl\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"contourcarpet\":[{\"type\":\"contourcarpet\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"contour\":[{\"type\":\"contour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"surface\":[{\"type\":\"surface\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"mesh3d\":[{\"type\":\"mesh3d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"parcoords\":[{\"type\":\"parcoords\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolargl\":[{\"type\":\"scatterpolargl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"scattergeo\":[{\"type\":\"scattergeo\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolar\":[{\"type\":\"scatterpolar\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"scattergl\":[{\"type\":\"scattergl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatter3d\":[{\"type\":\"scatter3d\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattermapbox\":[{\"type\":\"scattermapbox\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterternary\":[{\"type\":\"scatterternary\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattercarpet\":[{\"type\":\"scattercarpet\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}],\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}]},\"layout\":{\"autotypenumbers\":\"strict\",\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"hovermode\":\"closest\",\"hoverlabel\":{\"align\":\"left\"},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"#E5ECF6\",\"polar\":{\"bgcolor\":\"#E5ECF6\",\"angularaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"radialaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"ternary\":{\"bgcolor\":\"#E5ECF6\",\"aaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"caxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]]},\"xaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"yaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"yaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"zaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"geo\":{\"bgcolor\":\"white\",\"landcolor\":\"#E5ECF6\",\"subunitcolor\":\"white\",\"showland\":true,\"showlakes\":true,\"lakecolor\":\"white\"},\"title\":{\"x\":0.05},\"mapbox\":{\"style\":\"light\"}}},\"xaxis\":{\"anchor\":\"y\",\"domain\":[0.0,1.0],\"title\":{\"text\":\"Month\"}},\"yaxis\":{\"anchor\":\"x\",\"domain\":[0.0,1.0],\"title\":{\"text\":\"Units Sold\"}},\"legend\":{\"title\":{\"text\":\"color\"},\"tracegroupgap\":0},\"title\":{\"text\":\"Units Sold by Month\"},\"barmode\":\"relative\",\"width\":1080,\"bargap\":0.2},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('2d7ec012-b9ad-49dd-abf7-204bdc42d774');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };                });            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "# Extrair o ano e mês da coluna 'Date'\n",
+    "df['date'] = pd.to_datetime(df['date'])\n",
+    "df['month'] = df['date'].dt.strftime('%Y-%m')  # Extraindo o ano e mês da data\n",
+    "df_grouped = df.groupby('month')['units_sold'].sum().reset_index()\n",
+    "\n",
+    "# Criando o histograma com plotly express\n",
+    "fig = px.bar(df_grouped, x='month', y='units_sold', labels={'month': 'Month', 'units_sold': 'Units Sold'},\n",
+    "             title='Units Sold by Month', color=['red' if date == '2024-03' else 'blue' for date in df_grouped.month], text='units_sold')\n",
+    "\n",
+    "fig.update_traces(textposition='outside')\n",
+    "\n",
+    "fig.update_layout(width=1080, bargap=0.2)\n",
+    "\n",
+    "# Exibindo o gráfico\n",
+    "fig.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "c3f036e5",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-22T13:56:10.060591Z",
+     "iopub.status.busy": "2024-07-22T13:56:10.060190Z",
+     "iopub.status.idle": "2024-07-22T13:56:10.139299Z",
+     "shell.execute_reply": "2024-07-22T13:56:10.138173Z"
+    },
+    "papermill": {
+     "duration": 0.087104,
+     "end_time": "2024-07-22T13:56:10.141515",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:10.054411",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/opt/conda/lib/python3.10/site-packages/plotly/express/_core.py:2065: FutureWarning:\n",
+      "\n",
+      "When grouping with a length-1 list-like, you will need to pass a length-1 tuple to get_group in a future version of pandas. Pass `(name,)` instead of `name` to silence this warning.\n",
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<div>                            <div id=\"6e93ab52-47cd-4376-9942-e1ecf6454f93\" class=\"plotly-graph-div\" style=\"height:525px; width:1080px;\"></div>            <script type=\"text/javascript\">                require([\"plotly\"], function(Plotly) {                    window.PLOTLYENV=window.PLOTLYENV || {};                                    if (document.getElementById(\"6e93ab52-47cd-4376-9942-e1ecf6454f93\")) {                    Plotly.newPlot(                        \"6e93ab52-47cd-4376-9942-e1ecf6454f93\",                        [{\"alignmentgroup\":\"True\",\"hovertemplate\":\"color=blue\\u003cbr\\u003eMonth=%{x}\\u003cbr\\u003eTotal Revenue=%{text}\\u003cextra\\u003e\\u003c\\u002fextra\\u003e\",\"legendgroup\":\"blue\",\"marker\":{\"color\":\"#636efa\",\"pattern\":{\"shape\":\"\"}},\"name\":\"blue\",\"offsetgroup\":\"blue\",\"orientation\":\"v\",\"showlegend\":true,\"text\":[14548.32,10803.37,12451.69,8455.49,7384.55,6797.08,7278.11],\"textposition\":\"outside\",\"x\":[\"2024-01\",\"2024-02\",\"2024-04\",\"2024-05\",\"2024-06\",\"2024-07\",\"2024-08\"],\"xaxis\":\"x\",\"y\":[14548.32,10803.37,12451.69,8455.49,7384.55,6797.08,7278.11],\"yaxis\":\"y\",\"type\":\"bar\",\"texttemplate\":\"%{text:.2s}\"},{\"alignmentgroup\":\"True\",\"hovertemplate\":\"color=red\\u003cbr\\u003eMonth=%{x}\\u003cbr\\u003eTotal Revenue=%{text}\\u003cextra\\u003e\\u003c\\u002fextra\\u003e\",\"legendgroup\":\"red\",\"marker\":{\"color\":\"#EF553B\",\"pattern\":{\"shape\":\"\"}},\"name\":\"red\",\"offsetgroup\":\"red\",\"orientation\":\"v\",\"showlegend\":true,\"text\":[12849.24],\"textposition\":\"outside\",\"x\":[\"2024-03\"],\"xaxis\":\"x\",\"y\":[12849.24],\"yaxis\":\"y\",\"type\":\"bar\",\"texttemplate\":\"%{text:.2s}\"}],                        {\"template\":{\"data\":{\"histogram2dcontour\":[{\"type\":\"histogram2dcontour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"choropleth\":[{\"type\":\"choropleth\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"histogram2d\":[{\"type\":\"histogram2d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"heatmap\":[{\"type\":\"heatmap\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"heatmapgl\":[{\"type\":\"heatmapgl\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"contourcarpet\":[{\"type\":\"contourcarpet\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"contour\":[{\"type\":\"contour\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"surface\":[{\"type\":\"surface\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"},\"colorscale\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]]}],\"mesh3d\":[{\"type\":\"mesh3d\",\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}],\"scatter\":[{\"fillpattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2},\"type\":\"scatter\"}],\"parcoords\":[{\"type\":\"parcoords\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolargl\":[{\"type\":\"scatterpolargl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"bar\":[{\"error_x\":{\"color\":\"#2a3f5f\"},\"error_y\":{\"color\":\"#2a3f5f\"},\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"bar\"}],\"scattergeo\":[{\"type\":\"scattergeo\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterpolar\":[{\"type\":\"scatterpolar\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"histogram\":[{\"marker\":{\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"histogram\"}],\"scattergl\":[{\"type\":\"scattergl\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatter3d\":[{\"type\":\"scatter3d\",\"line\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattermapbox\":[{\"type\":\"scattermapbox\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scatterternary\":[{\"type\":\"scatterternary\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"scattercarpet\":[{\"type\":\"scattercarpet\",\"marker\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}}}],\"carpet\":[{\"aaxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"baxis\":{\"endlinecolor\":\"#2a3f5f\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"minorgridcolor\":\"white\",\"startlinecolor\":\"#2a3f5f\"},\"type\":\"carpet\"}],\"table\":[{\"cells\":{\"fill\":{\"color\":\"#EBF0F8\"},\"line\":{\"color\":\"white\"}},\"header\":{\"fill\":{\"color\":\"#C8D4E3\"},\"line\":{\"color\":\"white\"}},\"type\":\"table\"}],\"barpolar\":[{\"marker\":{\"line\":{\"color\":\"#E5ECF6\",\"width\":0.5},\"pattern\":{\"fillmode\":\"overlay\",\"size\":10,\"solidity\":0.2}},\"type\":\"barpolar\"}],\"pie\":[{\"automargin\":true,\"type\":\"pie\"}]},\"layout\":{\"autotypenumbers\":\"strict\",\"colorway\":[\"#636efa\",\"#EF553B\",\"#00cc96\",\"#ab63fa\",\"#FFA15A\",\"#19d3f3\",\"#FF6692\",\"#B6E880\",\"#FF97FF\",\"#FECB52\"],\"font\":{\"color\":\"#2a3f5f\"},\"hovermode\":\"closest\",\"hoverlabel\":{\"align\":\"left\"},\"paper_bgcolor\":\"white\",\"plot_bgcolor\":\"#E5ECF6\",\"polar\":{\"bgcolor\":\"#E5ECF6\",\"angularaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"radialaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"ternary\":{\"bgcolor\":\"#E5ECF6\",\"aaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"baxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"},\"caxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\"}},\"coloraxis\":{\"colorbar\":{\"outlinewidth\":0,\"ticks\":\"\"}},\"colorscale\":{\"sequential\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"sequentialminus\":[[0.0,\"#0d0887\"],[0.1111111111111111,\"#46039f\"],[0.2222222222222222,\"#7201a8\"],[0.3333333333333333,\"#9c179e\"],[0.4444444444444444,\"#bd3786\"],[0.5555555555555556,\"#d8576b\"],[0.6666666666666666,\"#ed7953\"],[0.7777777777777778,\"#fb9f3a\"],[0.8888888888888888,\"#fdca26\"],[1.0,\"#f0f921\"]],\"diverging\":[[0,\"#8e0152\"],[0.1,\"#c51b7d\"],[0.2,\"#de77ae\"],[0.3,\"#f1b6da\"],[0.4,\"#fde0ef\"],[0.5,\"#f7f7f7\"],[0.6,\"#e6f5d0\"],[0.7,\"#b8e186\"],[0.8,\"#7fbc41\"],[0.9,\"#4d9221\"],[1,\"#276419\"]]},\"xaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"yaxis\":{\"gridcolor\":\"white\",\"linecolor\":\"white\",\"ticks\":\"\",\"title\":{\"standoff\":15},\"zerolinecolor\":\"white\",\"automargin\":true,\"zerolinewidth\":2},\"scene\":{\"xaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"yaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2},\"zaxis\":{\"backgroundcolor\":\"#E5ECF6\",\"gridcolor\":\"white\",\"linecolor\":\"white\",\"showbackground\":true,\"ticks\":\"\",\"zerolinecolor\":\"white\",\"gridwidth\":2}},\"shapedefaults\":{\"line\":{\"color\":\"#2a3f5f\"}},\"annotationdefaults\":{\"arrowcolor\":\"#2a3f5f\",\"arrowhead\":0,\"arrowwidth\":1},\"geo\":{\"bgcolor\":\"white\",\"landcolor\":\"#E5ECF6\",\"subunitcolor\":\"white\",\"showland\":true,\"showlakes\":true,\"lakecolor\":\"white\"},\"title\":{\"x\":0.05},\"mapbox\":{\"style\":\"light\"}}},\"xaxis\":{\"anchor\":\"y\",\"domain\":[0.0,1.0],\"title\":{\"text\":\"Month\"}},\"yaxis\":{\"anchor\":\"x\",\"domain\":[0.0,1.0],\"title\":{\"text\":\"Total Revenue\"}},\"legend\":{\"title\":{\"text\":\"color\"},\"tracegroupgap\":0},\"title\":{\"text\":\"Units Sold by Month\"},\"barmode\":\"relative\",\"width\":1080,\"bargap\":0.2},                        {\"responsive\": true}                    ).then(function(){\n",
+       "                            \n",
+       "var gd = document.getElementById('6e93ab52-47cd-4376-9942-e1ecf6454f93');\n",
+       "var x = new MutationObserver(function (mutations, observer) {{\n",
+       "        var display = window.getComputedStyle(gd).display;\n",
+       "        if (!display || display === 'none') {{\n",
+       "            console.log([gd, 'removed!']);\n",
+       "            Plotly.purge(gd);\n",
+       "            observer.disconnect();\n",
+       "        }}\n",
+       "}});\n",
+       "\n",
+       "// Listen for the removal of the full notebook cells\n",
+       "var notebookContainer = gd.closest('#notebook-container');\n",
+       "if (notebookContainer) {{\n",
+       "    x.observe(notebookContainer, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "// Listen for the clearing of the current output cell\n",
+       "var outputEl = gd.closest('.output');\n",
+       "if (outputEl) {{\n",
+       "    x.observe(outputEl, {childList: true});\n",
+       "}}\n",
+       "\n",
+       "                        })                };                });            </script>        </div>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "df_grouped = df.groupby('month')['total_revenue'].sum().reset_index()\n",
+    "# Criando o histograma com plotly express\n",
+    "fig = px.bar(df_grouped, x='month', y='total_revenue', labels={'month': 'Month', 'total_revenue': 'Total Revenue'},\n",
+    "             title='Units Sold by Month', color=['red' if date == '2024-03' else 'blue' for date in df_grouped.month], text='total_revenue')\n",
+    "\n",
+    "fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')\n",
+    "\n",
+    "fig.update_layout(width=1080, bargap=0.2)\n",
+    "\n",
+    "# Exibindo o gráfico\n",
+    "fig.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "51bc0082",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-07-22T13:56:10.152352Z",
+     "iopub.status.busy": "2024-07-22T13:56:10.151986Z",
+     "iopub.status.idle": "2024-07-22T13:56:10.159704Z",
+     "shell.execute_reply": "2024-07-22T13:56:10.158602Z"
+    },
+    "papermill": {
+     "duration": 0.015816,
+     "end_time": "2024-07-22T13:56:10.161903",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:10.146087",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "80567.84999999999"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df.total_revenue.sum()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ae419bc8",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004726,
+     "end_time": "2024-07-22T13:56:10.171344",
+     "exception": false,
+     "start_time": "2024-07-22T13:56:10.166618",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "datasetId": 5085377,
+     "sourceId": 8517615,
+     "sourceType": "datasetVersion"
+    }
+   ],
+   "dockerImageVersionId": 30746,
+   "isGpuEnabled": false,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.13"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 7.698612,
+   "end_time": "2024-07-22T13:56:10.797536",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2024-07-22T13:56:03.098924",
+   "version": "2.5.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
